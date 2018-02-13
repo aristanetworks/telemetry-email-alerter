@@ -73,7 +73,7 @@ class TelemetryWs(object):
             )
 
             if request.status_code == 200:
-                print 'Successfully logged in Aeris'
+                logging.info('Successfully logged in to Aeris.')
                 headers = [
                     'Cookie: session_id={}'.format(request.json()['sessionId']),
                     'Cache-Control: no-cache',
@@ -88,7 +88,7 @@ class TelemetryWs(object):
                     header=headers,
                 )
             else:
-                print 'Bad credentials'
+                logging.error('Aeris credentials invalid. Could not log in.')
                 exit()
 
         if cmd_args.noEmailSSL:
@@ -109,14 +109,14 @@ class TelemetryWs(object):
         self.events_token = None
         self.socket.on_open = self.on_run
 
-    def on_run(self):
+    def on_run(self, _):
         """
         Methods to run when the ws connects
         """
         self.start_ping()
         self.get_and_subscribe_devices()
         self.get_events()
-        print '...awaiting events'
+        logging.info('Websocket connected.')
 
     def start_ping(self):
         """
@@ -144,14 +144,14 @@ class TelemetryWs(object):
         Run when ws closes. This will kill the ping thread
         """
         self.ping_thread.cancel()
-        print '### closed ###'
+        logging.info('Websocket connection closed.')
 
     @staticmethod
     def on_error(_, error):
         """
         Print websocket error
         """
-        print 'Error: %s' % error
+        logging.error('Websocket connection error: {}'.format(error))
 
     @staticmethod
     def make_token():
@@ -182,7 +182,7 @@ class TelemetryWs(object):
         """
         Subscribes to Telemetry events
         """
-        print 'Subscribing to Telemetry events'
+        logging.info('Subscribing to Telemetry events')
         self.events_token = self.make_token()
         args = {'query': {'analytics': {'/events/v1/allEvents': True}}}
         subscribe = threading.Thread(
@@ -197,7 +197,7 @@ class TelemetryWs(object):
         We'll use this list of devices keyed by the serial number to add more
         info to the email.
         """
-        print 'Subscribing to Telemetry devices'
+        logging.info('Subscribing to Telemetry devices.')
         self.devices_get_token = self.make_token()
         self.devices_sub_token = self.make_token()
 
@@ -228,6 +228,8 @@ class TelemetryWs(object):
         for key, value in devices['updates'].items():
             self.devices[key] = value['value']['hostname']
 
+        logging.info('Received devices. Total device count is {}.'.format(len(self.devices)))
+
     def send_email(self, event):
         """
         Send an email using variables above
@@ -235,7 +237,7 @@ class TelemetryWs(object):
         if 'data' not in event['updates']:
             return
 
-        print 'Preparing email notification'
+        logging.debug('Preparing email notification.')
 
         # Gather data for message
         update = event['updates']
@@ -264,7 +266,7 @@ class TelemetryWs(object):
         self.server.sendmail(self.config.userName,
                              self.config.sendToAddress.split(','),
                              message.as_string())
-        print 'Email sent'
+        logging.info('Email sent for event: {} {}'.format(severity, title))
 
 
 def main():
@@ -320,6 +322,12 @@ def main():
         '--aerisUsername',
         help='Aeris username if authentication is required',
     )
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        default=False,
+        help='Display additional info messages'
+    )
 
     cmd_args = parser.parse_args()
     passwords = dict()
@@ -327,8 +335,9 @@ def main():
     if not cmd_args.noAerisSSL:
         passwords['aerisPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.aerisUrl))
 
-    logging.basicConfig()
-    # websocket.enableTrace(True) # Uncomment for debug msgs
+    logging_level = logging.DEBUG if cmd_args.verbose else logging.WARNING
+    logging.basicConfig(level=logging_level)
+
     connection = TelemetryWs(cmd_args, passwords)
     connection.socket.run_forever(sslopt={
         'check_hostname': False,

@@ -30,7 +30,7 @@ class TelemetryWs(object):
     def __init__(self, cmd_args, passwords):
         super(TelemetryWs, self).__init__()
 
-        if cmd_args.noTelemetrySSL:
+        if cmd_args.noTelemetrySsl:
             telemetry_ws = 'ws://{}/aeris/v1/wrpc/'.format(cmd_args.telemetryUrl)
             self.socket = websocket.WebSocketApp(
                 telemetry_ws,
@@ -50,7 +50,7 @@ class TelemetryWs(object):
             request = requests.post(
                 'https://{}/{}'.format(cmd_args.telemetryUrl, AUTH_PATH),
                 data=json.dumps(credentials), headers=headers,
-                verify=not cmd_args.noSSLValidation,
+                verify=not cmd_args.noSslValidation,
             )
 
             if request.status_code == 200:
@@ -234,8 +234,8 @@ class TelemetryWs(object):
 
         message['From'] = self.config.userName
         message['To'] = self.config.sendToAddress
-        if self.config.sendCCAddress:
-            message['Cc'] = self.config.sendCCAddress
+        if self.config.sendCcAddress:
+            message['Cc'] = self.config.sendCcAddress
         message['Subject'] = '{} {} {}'.format(self.config.subjectPrefix, severity, title)
 
         self.server.sendmail(self.config.userName,
@@ -261,7 +261,7 @@ def main():
     )
     parser.add_argument(
         '-c',
-        '--sendCCAddress',
+        '--sendCcAddress',
         help='Comma-separated list of email recipients',
     )
     parser.add_argument(
@@ -288,7 +288,7 @@ def main():
         help='Flag to disable SSL SMTP connection',
     )
     parser.add_argument(
-        '--noTelemetrySSL',
+        '--noTelemetrySsl',
         action='store_true',
         default=False,
         help='Flag to disable SSL websocket connection',
@@ -298,7 +298,7 @@ def main():
         help='Telemetry username if authentication is required',
     )
     parser.add_argument(
-        '--noSSLValidation',
+        '--noSslValidation',
         action='store_true',
         default=False,
         help='Disable validation of SSL certificates (inadvised; potentially dangerous)',
@@ -318,7 +318,7 @@ def main():
             passwords['smtpPassword'] = getpass.getpass('Enter SMTP server password for {}'.format(
                 cmd_args.smtpUsername)
             )
-        if not cmd_args.noTelemetrySSL:
+        if not cmd_args.noTelemetrySsl:
             passwords['telemetryPassword'] = getpass.getpass('Enter Telemetry password for {}'.format(
                 cmd_args.telemetryUrl)
             )
@@ -332,7 +332,7 @@ def main():
 
     try:
         ssl_options = None
-        if cmd_args.noSSLValidation:
+        if cmd_args.noSslValidation:
             ssl_options = {
                 'check_hostname': False,
                 'cert_reqs': ssl.CERT_NONE,

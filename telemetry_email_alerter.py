@@ -37,54 +37,66 @@ VERSION_1 = '1.0.0'
 SUBSCRIBE = 'subscribe'
 GET = 'get'
 
+AUTH_PATH = 'cvpservice/login/authenticate.do'
+
 
 class TelemetryWs(object):
     """
     Class to handle connection methods required to get
     and subscribe to steaming data.
     """
-    def __init__(self, cmd_args, pwds):
+
+    def __init__(self, cmd_args, passwords):
         super(TelemetryWs, self).__init__()
 
         if cmd_args.noAerisSSL:
-            aerisWs = 'ws://%s/aeris/v1/wrpc/' % cmd_args.aerisUrl
-            self.socket = websocket.WebSocketApp(aerisWs,
-                                                 on_message=self.on_message,
-                                                 on_error=self.on_error,
-                                                 on_close=self.on_close)
+            aeris_ws = 'ws://{}/aeris/v1/wrpc/'.format(cmd_args.aerisUrl)
+            self.socket = websocket.WebSocketApp(
+                aeris_ws,
+                on_message=self.on_message,
+                on_error=self.on_error,
+                on_close=self.on_close,
+            )
         else:  # login and setup wss
-            AUTH_PATH = 'cvpservice/login/authenticate.do'
-            credentials = {'userId': cmd_args.aerisUsername,
-                           'password': pwds['aerisPassword']}
-            headers = {'Accept': 'application/json',
-                       'Content-Type': 'application/json'}
-            r = requests.post('https://%s/%s' % (cmd_args.aerisUrl, AUTH_PATH),
-                              data=json.dumps(credentials), headers=headers,
-                              verify=False)
+            credentials = {
+                'userId': cmd_args.aerisUsername,
+                'password': passwords['aerisPassword'],
+            }
+            headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+            request = requests.post(
+                'https://{}/{}'.format(cmd_args.aerisUrl, AUTH_PATH),
+                data=json.dumps(credentials), headers=headers,
+                verify=False,
+            )
 
-            if r.status_code == 200:
+            if request.status_code == 200:
                 print 'Successfully logged in Aeris'
-                headers = ['Cookie: session_id=%s' % r.json()['sessionId'],
-                           'Cache-Control: no-cache',
-                           'Pragma: no-cache']
-                aerisWs = 'wss://%s/aeris/v1/wrpc/' % cmd_args.aerisUrl
-                self.socket = websocket.WebSocketApp(aerisWs,
-                                                     on_message=self.on_message,
-                                                     on_error=self.on_error,
-                                                     on_close=self.on_close,
-                                                     header=headers)
+                headers = [
+                    'Cookie: session_id={}'.format(request.json()['sessionId']),
+                    'Cache-Control: no-cache',
+                    'Pragma: no-cache',
+                ]
+                aeris_ws = 'wss://{}/aeris/v1/wrpc/'.format(cmd_args.aerisUrl)
+                self.socket = websocket.WebSocketApp(
+                    aeris_ws,
+                    on_message=self.on_message,
+                    on_error=self.on_error,
+                    on_close=self.on_close,
+                    header=headers,
+                )
             else:
                 print 'Bad credentials'
                 exit()
 
         if cmd_args.noEmailSSL:
-            self.server = smtplib.SMTP(cmd_args.emailServer,
-                                       cmd_args.port)
+            self.server = smtplib.SMTP(cmd_args.emailServer, cmd_args.port)
         else:
-            self.server = smtplib.SMTP_SSL(cmd_args.emailServer,
-                                           cmd_args.port)
+            self.server = smtplib.SMTP_SSL(cmd_args.emailServer, cmd_args.port)
         try:
-            self.server.login(cmd_args.userName, pwds['emailPassword'])
+            self.server.login(cmd_args.userName, passwords['emailPassword'])
         except Exception as e:
             print e
             exit()
@@ -118,11 +130,11 @@ class TelemetryWs(object):
         """
         Formats a message to be send to Telemetry WS server
         """
-        argName = 'args' if version == '0.9.0' else 'params'
+        arg_name = 'args' if version == '0.9.0' else 'params'
         data = {
             'token': token,
             'command': command,
-            argName: args,
+            arg_name: args,
             'version': version,
         }
         self.socket.send(json.dumps(data))
@@ -173,9 +185,10 @@ class TelemetryWs(object):
         print 'Subscribing to Telemetry events'
         self.events_token = self.make_token()
         args = {'query': {'analytics': {'/events/v1/allEvents': True}}}
-        subscribe = threading.Thread(target=self.send_message,
-                                     args=(SUBSCRIBE, self.events_token,
-                                           args, VERSION_1))
+        subscribe = threading.Thread(
+            target=self.send_message,
+            args=(SUBSCRIBE, self.events_token, args, VERSION_1)
+        )
         subscribe.start()
 
     def get_and_subscribe_devices(self):
@@ -193,16 +206,18 @@ class TelemetryWs(object):
             'query': {'analytics': {'/DatasetInfo/EosSwitches': True}},
             'count': False,
         }
-        get_devices = threading.Thread(target=self.send_message,
-                                       args=(GET, self.devices_get_token,
-                                             get_args, VERSION_1))
+        get_devices = threading.Thread(
+            target=self.send_message,
+            args=(GET, self.devices_get_token, get_args, VERSION_1),
+        )
         get_devices.start()
 
         # subscribe for future changes
         args = {'query': {'analytics': {'/DatasetInfo/EosSwitches': True}}}
-        subscribe = threading.Thread(target=self.send_message,
-                                     args=(SUBSCRIBE, self.devices_sub_token,
-                                           args, VERSION_1))
+        subscribe = threading.Thread(
+            target=self.send_message,
+            args=(SUBSCRIBE, self.devices_sub_token, args, VERSION_1),
+        )
         subscribe.start()
 
     def process_devices(self, devices):
@@ -225,78 +240,100 @@ class TelemetryWs(object):
         # Gather data for message
         update = event['updates']
         data = update['data']['value']
+
         # Try to lookup the hostname, if not found return the serialnum
         host = self.devices.get(data.get('deviceId'), data.get('deviceId'))
         severity = update['severity']['value']
         title = update['title']['value']
         desc = update['description']['value']
-        ts = update['timestamp']['value'] / 1000  # ms to sec
-        datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))
+        timestamp = update['timestamp']['value'] / 1000  # ms to sec
+        datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
 
-        body = '''%s event on %s at %s\n \
-        Description: %s\n \
-        View Event at %s/telemetry/events\n''' % (severity, host, datetime,
-                                                  desc, self.config.aerisUrl)
+        body = '''{} event on {} at {}\n \
+        Description: {}\n \
+        View Event at {}/telemetry/events\n'''.format(severity, host, datetime, desc, self.config.aerisUrl)
 
-        msg = MIMEText(body)
+        message = MIMEText(body)
 
-        msg['From'] = self.config.userName
-        msg['To'] = '%s' % self.config.sendToAddress
+        message['From'] = self.config.userName
+        message['To'] = self.config.sendToAddress
         if self.config.sendCCAddress:
-            msg['Cc'] = '%s' % self.config.sendCCAddress
-        msg['Subject'] = '%s %s %s' % (self.config.subjectPrefix,
-                                       severity, title)
+            message['Cc'] = self.config.sendCCAddress
+        message['Subject'] = '{} {} {}'.format(self.config.subjectPrefix, severity, title)
 
         self.server.sendmail(self.config.userName,
                              self.config.sendToAddress.split(','),
-                             msg.as_string())
+                             message.as_string())
         print 'Email sent'
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Redirect streaming events as'
-                                     ' email notifications.')
-    parser.add_argument('aerisUrl',
-                        help='IP address or hostname of CVP or Aeris')
-    parser.add_argument('emailServer',
-                        help='IP address or hostname of email server')
-    parser.add_argument('userName',
-                        help='Email username, eg bob@acme.com')
-    parser.add_argument('sendToAddress',
-                        help='Comma-separated list of email recipients')
-    parser.add_argument('-c', '--sendCCAddress',
-                        help='Comma-separated list of email recipients')
-    parser.add_argument('-s', '--subjectPrefix',
-                        default='[CloudVision Telemetry]',
-                        help='Text to prefix the Subject line')
-    parser.add_argument('-p', '--port',
-                        type=int,
-                        default=465,
-                        help='destination port on SMTP server')
-    parser.add_argument('--noEmailSSL',
-                        action='store_true',
-                        default=False,
-                        help='Flag to disable SSL SMTP connection')
-    parser.add_argument('--noAerisSSL',
-                        action='store_true',
-                        default=False,
-                        help='Flag to disable SSL websocket connection')
-    parser.add_argument('--aerisUsername',
-                        help='Aeris username if authentication is required')
+    parser = argparse.ArgumentParser(description='Redirect streaming events as email notifications.')
+
+    parser.add_argument(
+        'aerisUrl',
+        help='IP address or hostname of CVP or Aeris',
+    )
+    parser.add_argument(
+        'emailServer',
+        help='IP address or hostname of email server',
+    )
+    parser.add_argument(
+        'userName',
+        help='Email username, eg bob@acme.com',
+    )
+    parser.add_argument(
+        'sendToAddress',
+        help='Comma-separated list of email recipients',
+    )
+    parser.add_argument(
+        '-c',
+        '--sendCCAddress',
+        help='Comma-separated list of email recipients',
+    )
+    parser.add_argument(
+        '-s',
+        '--subjectPrefix',
+        default='[CloudVision Telemetry]',
+        help='Text to prefix the Subject line',
+    )
+    parser.add_argument(
+        '-p',
+        '--port',
+        type=int,
+        default=465,
+        help='destination port on SMTP server',
+    )
+    parser.add_argument(
+        '--noEmailSSL',
+        action='store_true',
+        default=False,
+        help='Flag to disable SSL SMTP connection',
+    )
+    parser.add_argument(
+        '--noAerisSSL',
+        action='store_true',
+        default=False,
+        help='Flag to disable SSL websocket connection',
+    )
+    parser.add_argument(
+        '--aerisUsername',
+        help='Aeris username if authentication is required',
+    )
 
     cmd_args = parser.parse_args()
-    passwd = dict()
-    passwd['emailPassword'] = getpass.getpass('Enter password for %s' %
-                                              cmd_args.userName)
+    passwords = dict()
+    passwords['emailPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.userName))
     if not cmd_args.noAerisSSL:
-        passwd['aerisPassword'] = getpass.getpass('Enter password for %s' %
-                                                  cmd_args.aerisUrl)
+        passwords['aerisPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.aerisUrl))
 
     logging.basicConfig()
     # websocket.enableTrace(True) # Uncomment for debug msgs
-    connection = TelemetryWs(cmd_args, passwd)
-    connection.socket.run_forever(sslopt={'check_hostname': False,
-                                          'cert_reqs': ssl.CERT_NONE})
+    connection = TelemetryWs(cmd_args, passwords)
+    connection.socket.run_forever(sslopt={
+        'check_hostname': False,
+        'cert_reqs': ssl.CERT_NONE
+    })
 
 
 if __name__ == '__main__':

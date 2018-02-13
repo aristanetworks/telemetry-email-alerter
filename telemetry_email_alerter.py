@@ -6,7 +6,7 @@ There are a few places in this script that disable certificate/hostname checks.
 To improve the security of transport, be sure to use properly signed
 certificates and remove:
 
-`r = requests.post('https://%s/%s' % (cmd_args.aerisUrl, AUTH_PATH),
+`r = requests.post('https://%s/%s' % (cmd_args.telemetryUrl, AUTH_PATH),
                    data=json.dumps(credentials), headers=headers,
                    verify=False)`
 
@@ -49,46 +49,46 @@ class TelemetryWs(object):
     def __init__(self, cmd_args, passwords):
         super(TelemetryWs, self).__init__()
 
-        if cmd_args.noAerisSSL:
-            aeris_ws = 'ws://{}/aeris/v1/wrpc/'.format(cmd_args.aerisUrl)
+        if cmd_args.noTelemetrySSL:
+            telemetry_ws = 'ws://{}/aeris/v1/wrpc/'.format(cmd_args.telemetryUrl)
             self.socket = websocket.WebSocketApp(
-                aeris_ws,
+                telemetry_ws,
                 on_message=self.on_message,
                 on_error=self.on_error,
                 on_close=self.on_close,
             )
         else:  # login and setup wss
             credentials = {
-                'userId': cmd_args.aerisUsername,
-                'password': passwords['aerisPassword'],
+                'userId': cmd_args.telemetryUsername,
+                'password': passwords['telemetryPassword'],
             }
             headers = {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             }
             request = requests.post(
-                'https://{}/{}'.format(cmd_args.aerisUrl, AUTH_PATH),
+                'https://{}/{}'.format(cmd_args.telemetryUrl, AUTH_PATH),
                 data=json.dumps(credentials), headers=headers,
                 verify=False,
             )
 
             if request.status_code == 200:
-                logging.info('Successfully logged in to Aeris.')
+                logging.info('Successfully logged in to Telemetry.')
                 headers = [
                     'Cookie: session_id={}'.format(request.json()['sessionId']),
                     'Cache-Control: no-cache',
                     'Pragma: no-cache',
                 ]
-                aeris_ws = 'wss://{}/aeris/v1/wrpc/'.format(cmd_args.aerisUrl)
+                telemetry_ws = 'wss://{}/aeris/v1/wrpc/'.format(cmd_args.telemetryUrl)
                 self.socket = websocket.WebSocketApp(
-                    aeris_ws,
+                    telemetry_ws,
                     on_message=self.on_message,
                     on_error=self.on_error,
                     on_close=self.on_close,
                     header=headers,
                 )
             else:
-                logging.error('Aeris credentials invalid. Could not log in.')
+                logging.error('Telemetry credentials invalid. Could not log in.')
                 exit()
 
         if cmd_args.noEmailSSL:
@@ -246,7 +246,7 @@ class TelemetryWs(object):
 
         body = '''{} event on {} at {}\n \
         Description: {}\n \
-        View Event at {}/telemetry/events\n'''.format(severity, host, datetime, desc, self.config.aerisUrl)
+        View Event at {}/telemetry/events\n'''.format(severity, host, datetime, desc, self.config.telemetryUrl)
 
         message = MIMEText(body)
 
@@ -266,8 +266,8 @@ def main():
     parser = argparse.ArgumentParser(description='Redirect streaming events as email notifications.')
 
     parser.add_argument(
-        'aerisUrl',
-        help='IP address or hostname of CVP or Aeris',
+        'telemetryUrl',
+        help='IP address or hostname of CVP or Telemetry',
     )
     parser.add_argument(
         'emailServer',
@@ -306,14 +306,14 @@ def main():
         help='Flag to disable SSL SMTP connection',
     )
     parser.add_argument(
-        '--noAerisSSL',
+        '--noTelemetrySSL',
         action='store_true',
         default=False,
         help='Flag to disable SSL websocket connection',
     )
     parser.add_argument(
-        '--aerisUsername',
-        help='Aeris username if authentication is required',
+        '--telemetryUsername',
+        help='Telemetry username if authentication is required',
     )
     parser.add_argument(
         '--verbose',
@@ -327,8 +327,8 @@ def main():
 
     try:
         passwords['emailPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.userName))
-        if not cmd_args.noAerisSSL:
-            passwords['aerisPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.aerisUrl))
+        if not cmd_args.noTelemetrySSL:
+            passwords['telemetryPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.telemetryUrl))
     except KeyboardInterrupt:
         exit()
 

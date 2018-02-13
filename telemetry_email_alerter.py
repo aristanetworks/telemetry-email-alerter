@@ -15,12 +15,10 @@ import websocket
 import threading
 import time
 
-VERSION_09 = '0.9.0'
-VERSION_1 = '1.0.0'
-SUBSCRIBE = 'subscribe'
-GET = 'get'
-
+API_VERSION_1 = '1.0.0'
 AUTH_PATH = 'cvpservice/login/authenticate.do'
+GET = 'get'
+SUBSCRIBE = 'subscribe'
 
 
 class TelemetryWs(object):
@@ -99,16 +97,15 @@ class TelemetryWs(object):
         self.get_and_subscribe_devices()
         self.get_events()
 
-    def send_message(self, command, token, args, version='0.9.0'):
+    def send_message(self, command, token, args):
         """
         Formats a message to be send to Telemetry WS server
         """
-        arg_name = 'args' if version == '0.9.0' else 'params'
         data = {
             'token': token,
             'command': command,
-            arg_name: args,
-            'version': version,
+            'params': args,
+            'version': API_VERSION_1,
         }
         self.socket.send(json.dumps(data))
 
@@ -163,7 +160,7 @@ class TelemetryWs(object):
         args = {'query': {'analytics': {'/events/v1/allEvents': True}}}
         subscribe = threading.Thread(
             target=self.send_message,
-            args=(SUBSCRIBE, self.events_token, args, VERSION_1)
+            args=(SUBSCRIBE, self.events_token, args)
         )
         subscribe.start()
 
@@ -184,7 +181,7 @@ class TelemetryWs(object):
         }
         get_devices = threading.Thread(
             target=self.send_message,
-            args=(GET, self.devices_get_token, get_args, VERSION_1),
+            args=(GET, self.devices_get_token, get_args),
         )
         get_devices.start()
 
@@ -192,7 +189,7 @@ class TelemetryWs(object):
         args = {'query': {'analytics': {'/DatasetInfo/EosSwitches': True}}}
         subscribe = threading.Thread(
             target=self.send_message,
-            args=(SUBSCRIBE, self.devices_sub_token, args, VERSION_1),
+            args=(SUBSCRIBE, self.devices_sub_token, args),
         )
         subscribe.start()
 

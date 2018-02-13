@@ -72,15 +72,17 @@ class TelemetryWs(object):
                 logging.error('Telemetry credentials invalid. Could not log in.')
                 exit()
 
-        if cmd_args.noEmailSSL:
-            self.server = smtplib.SMTP(cmd_args.emailServer, cmd_args.port)
+        if cmd_args.noSmtpSsl:
+            self.server = smtplib.SMTP(cmd_args.smtpServer, cmd_args.port)
         else:
-            self.server = smtplib.SMTP_SSL(cmd_args.emailServer, cmd_args.port)
-        try:
-            self.server.login(cmd_args.userName, passwords['emailPassword'])
-        except Exception as e:
-            print e
-            exit()
+            self.server = smtplib.SMTP_SSL(cmd_args.smtpServer, cmd_args.port)
+
+        if cmd_args.smtpUsername:
+            try:
+                self.server.login(cmd_args.userName, passwords['smtpUsername'])
+            except Exception as e:
+                print e
+                exit()
 
         self.config = cmd_args
         self.devices = {}
@@ -250,12 +252,8 @@ def main():
         help='IP address or hostname of CVP or Telemetry',
     )
     parser.add_argument(
-        'emailServer',
-        help='IP address or hostname of email server',
-    )
-    parser.add_argument(
-        'userName',
-        help='Email username, eg bob@acme.com',
+        'smtpServer',
+        help='IP address or hostname of SMTP (email) server',
     )
     parser.add_argument(
         'sendToAddress',
@@ -280,7 +278,11 @@ def main():
         help='destination port on SMTP server',
     )
     parser.add_argument(
-        '--noEmailSSL',
+        '--smtpUsername',
+        help='SMTP (email) server username, if required. e.g.: bob@acme.com',
+    )
+    parser.add_argument(
+        '--noSmtpSsl',
         action='store_true',
         default=False,
         help='Flag to disable SSL SMTP connection',
@@ -312,7 +314,10 @@ def main():
     passwords = dict()
 
     try:
-        passwords['emailPassword'] = getpass.getpass('Enter email server password for {}'.format(cmd_args.userName))
+        if cmd_args.smtpUsername:
+            passwords['smtpPassword'] = getpass.getpass('Enter SMTP server password for {}'.format(
+                cmd_args.smtpUsername)
+            )
         if not cmd_args.noTelemetrySSL:
             passwords['telemetryPassword'] = getpass.getpass('Enter Telemetry password for {}'.format(
                 cmd_args.telemetryUrl)

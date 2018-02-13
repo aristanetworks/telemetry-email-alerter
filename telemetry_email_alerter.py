@@ -109,7 +109,10 @@ class TelemetryWs(object):
             'params': args,
             'version': API_VERSION_1,
         }
-        self.socket.send(json.dumps(data))
+
+        json_data = json.dumps(data)
+        logging.debug('Sending request: {}'.format(json_data))
+        self.socket.send(json_data)
 
     @staticmethod
     def on_close(_):
@@ -142,16 +145,28 @@ class TelemetryWs(object):
         """
         Print message received from websocket
         """
+        logging.debug('Received message: {}'.format(message))
         data = json.loads(message)
+
+        if 'result' not in data:
+            return
+
         if data['token'] == self.events_token:
-            if 'result' in data:
-                for event in data['result'][0]['Notifications']:
-                    self.send_email(event)
-        elif (data['token'] == self.devices_get_token or
-              data['token'] == self.devices_sub_token):
-            if 'result' in data:
-                switch_updates = data['result'][0]['Notifications']
-                self.process_devices(switch_updates[len(switch_updates) - 1])
+            for event in data['result'][0]['Notifications']:
+                self.send_email(event)
+        elif (
+                data['token'] == self.devices_get_token
+                or data['token'] == self.devices_sub_token
+        ):
+            device_notifications = data['result'][0]['Notifications']
+            device_updates = {}
+            for notification in device_notifications:
+                if 'updates' not in notification:
+                    continue
+
+                for key, value in notification['updates'].items():
+                    device_updates[key] = value
+            self.process_devices(device_updates)
 
     def get_events(self):
         """
@@ -195,12 +210,12 @@ class TelemetryWs(object):
         )
         subscribe.start()
 
-    def process_devices(self, devices):
+    def process_devices(self, device_updates):
         """
         Iterate through the list of devices and store the mapping of
         serial number to hostname
         """
-        for key, value in devices['updates'].items():
+        for key, value in device_updates.items():
             self.devices[key] = value['value']['hostname']
 
         logging.info('Received devices. Total device count is {}.'.format(len(self.devices)))

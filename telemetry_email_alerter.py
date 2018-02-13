@@ -244,6 +244,13 @@ class TelemetryWs(object):
         logging.info('Email sent for event: {} {}'.format(severity, title))
 
 
+def get_password(prompt):
+    try:
+        return getpass.getpass(prompt)
+    except KeyboardInterrupt:
+        exit()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Redirect streaming events as email notifications.')
 
@@ -282,6 +289,10 @@ def main():
         help='SMTP (email) server username, if required. e.g.: bob@acme.com',
     )
     parser.add_argument(
+        '--smtpPassword',
+        help='SMTP (email) server password, if required. If omitted you will be prompted for it at startup.',
+    )
+    parser.add_argument(
         '--noSmtpSsl',
         action='store_true',
         default=False,
@@ -295,7 +306,11 @@ def main():
     )
     parser.add_argument(
         '--telemetryUsername',
-        help='Telemetry username if authentication is required',
+        help='Telemetry username, if authentication is required',
+    )
+    parser.add_argument(
+        '--telemetryPassword',
+        help='Telemetrypassword, if authentication is required. If omitted you will be prompted for it at startup.',
     )
     parser.add_argument(
         '--noSslValidation',
@@ -311,19 +326,18 @@ def main():
     )
 
     cmd_args = parser.parse_args()
+
     passwords = dict()
 
-    try:
-        if cmd_args.smtpUsername:
-            passwords['smtpPassword'] = getpass.getpass('Enter SMTP server password for {}'.format(
-                cmd_args.smtpUsername)
-            )
-        if not cmd_args.noTelemetrySsl:
-            passwords['telemetryPassword'] = getpass.getpass('Enter Telemetry password for {}'.format(
-                cmd_args.telemetryUrl)
-            )
-    except KeyboardInterrupt:
-        exit()
+    if cmd_args.smtpPassword:
+        passwords['smtpPassword'] = cmd_args.smtpPassword
+    elif cmd_args.smtpUsername:
+        passwords['smtpPassword'] = get_password('Enter SMTP server password for {}'.format(cmd_args.smtpUsername))
+
+    if cmd_args.telemetryPassword:
+        passwords['telemetryPassword'] = cmd_args.telemetryPassword
+    elif not cmd_args.noTelemetrySsl:
+        passwords['telemetryPassword'] = get_password('Enter Telemetry password for {}'.format(cmd_args.telemetryUrl))
 
     logging_level = logging.DEBUG if cmd_args.verbose else logging.WARNING
     logging.basicConfig(level=logging_level)

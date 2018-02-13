@@ -102,7 +102,6 @@ class TelemetryWs(object):
             exit()
 
         self.config = cmd_args
-        self.ping_thread = None
         self.devices = {}
         self.devices_get_token = None
         self.devices_sub_token = None
@@ -113,18 +112,9 @@ class TelemetryWs(object):
         """
         Methods to run when the ws connects
         """
-        self.start_ping()
         self.get_and_subscribe_devices()
         self.get_events()
         logging.info('Websocket connected.')
-
-    def start_ping(self):
-        """
-        Begins a periodic ping to the ws server
-        """
-        self.ping_thread = threading.Timer(5.0, self.start_ping)
-        self.ping_thread.start()
-        self.send_message('versions', self.make_token(), {}, VERSION_1)
 
     def send_message(self, command, token, args, version='0.9.0'):
         """
@@ -139,11 +129,11 @@ class TelemetryWs(object):
         }
         self.socket.send(json.dumps(data))
 
-    def on_close(self):
+    @staticmethod
+    def on_close():
         """
-        Run when ws closes. This will kill the ping thread
+        Run when ws closes.
         """
-        self.ping_thread.cancel()
         logging.info('Websocket connection closed.')
 
     @staticmethod

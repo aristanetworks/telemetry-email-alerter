@@ -286,11 +286,12 @@ def main():
     )
     parser.add_argument(
         '--smtpUsername',
-        help='SMTP (email) server username, if required. e.g.: bob@acme.com',
+        help='SMTP (email) server username, if authentication is required. e.g.: bob@acme.com',
     )
     parser.add_argument(
         '--smtpPassword',
-        help='SMTP (email) server password, if required. If omitted you will be prompted for it at startup.',
+        help='''SMTP (email) server password, if authentication is required.
+                If omitted you will be prompted for it at startup''',
     )
     parser.add_argument(
         '--noSmtpSsl',
@@ -310,7 +311,8 @@ def main():
     )
     parser.add_argument(
         '--telemetryPassword',
-        help='Telemetrypassword, if authentication is required. If omitted you will be prompted for it at startup.',
+        help='''Telemetry password, if authentication is required.
+                If omitted you will be prompted for it at startup''',
     )
     parser.add_argument(
         '--noSslValidation',

@@ -1,22 +1,5 @@
 #!/usr/bin/env python
 
-"""
-NOTE:
-There are a few places in this script that disable certificate/hostname checks.
-To improve the security of transport, be sure to use properly signed
-certificates and remove:
-
-`r = requests.post('https://%s/%s' % (cmd_args.telemetryUrl, AUTH_PATH),
-                   data=json.dumps(credentials), headers=headers,
-                   verify=False)`
-
-as well as
-
-`connection.socket.run_forever(sslopt={'check_hostname': False,
-                                      'cert_reqs': ssl.CERT_NONE})`
-
-"""
-
 import argparse
 from Crypto.Hash import SHA256
 from email.mime.text import MIMEText
@@ -69,7 +52,7 @@ class TelemetryWs(object):
             request = requests.post(
                 'https://{}/{}'.format(cmd_args.telemetryUrl, AUTH_PATH),
                 data=json.dumps(credentials), headers=headers,
-                verify=False,
+                verify=not cmd_args.noSSLValidation,
             )
 
             if request.status_code == 200:
@@ -316,6 +299,12 @@ def main():
         help='Telemetry username if authentication is required',
     )
     parser.add_argument(
+        '--noSSLValidation',
+        action='store_true',
+        default=False,
+        help='Disable validation of SSL certificates (inadvised; potentially dangerous)',
+    )
+    parser.add_argument(
         '--verbose',
         action='store_true',
         default=False,
@@ -340,10 +329,14 @@ def main():
     connection = TelemetryWs(cmd_args, passwords)
 
     try:
-        connection.socket.run_forever(sslopt={
-            'check_hostname': False,
-            'cert_reqs': ssl.CERT_NONE
-        })
+        ssl_options = None
+        if cmd_args.noSSLValidation:
+            ssl_options = {
+                'check_hostname': False,
+                'cert_reqs': ssl.CERT_NONE,
+            }
+
+        connection.socket.run_forever(sslopt=ssl_options)
     except KeyboardInterrupt:
         connection.socket.close()
         exit()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-'''
+"""
 NOTE:
 There are a few places in this script that disable certificate/hostname checks.
 To improve the security of transport, be sure to use properly signed
@@ -15,9 +15,7 @@ as well as
 `connection.socket.run_forever(sslopt={'check_hostname': False,
                                       'cert_reqs': ssl.CERT_NONE})`
 
-'''
-
-# pylint: disable=W0613,C0103
+"""
 
 import argparse
 from Crypto.Hash import SHA256
@@ -41,9 +39,10 @@ GET = 'get'
 
 
 class TelemetryWs(object):
-    '''Class to handle connection methods required to get
+    """
+    Class to handle connection methods required to get
     and subscribe to steaming data.
-    '''
+    """
     def __init__(self, cmd_args, pwds):
         super(TelemetryWs, self).__init__()
 
@@ -98,24 +97,27 @@ class TelemetryWs(object):
         self.events_token = None
         self.socket.on_open = self.on_run
 
-    def on_run(self, *args):
-        '''Methods to run when the ws connects
-        '''
+    def on_run(self):
+        """
+        Methods to run when the ws connects
+        """
         self.start_ping()
         self.get_and_subscribe_devices()
         self.get_events()
         print '...awaiting events'
 
-    def start_ping(self, *args):
-        '''Begins a periodic ping to the ws server
-        '''
+    def start_ping(self):
+        """
+        Begins a periodic ping to the ws server
+        """
         self.ping_thread = threading.Timer(5.0, self.start_ping)
         self.ping_thread.start()
         self.send_message('versions', self.make_token(), {}, VERSION_1)
 
     def send_message(self, command, token, args, version='0.9.0'):
-        '''Formats a message to be send to Telemetry WS server
-        '''
+        """
+        Formats a message to be send to Telemetry WS server
+        """
         argName = 'args' if version == '0.9.0' else 'params'
         data = {
             'token': token,
@@ -125,29 +127,34 @@ class TelemetryWs(object):
         }
         self.socket.send(json.dumps(data))
 
-    def on_close(self, *args):
-        '''Run when ws closes. This will kill the ping thread
-        '''
+    def on_close(self):
+        """
+        Run when ws closes. This will kill the ping thread
+        """
         self.ping_thread.cancel()
         print '### closed ###'
 
     @staticmethod
-    def on_error(ws, error):
-        '''Print websocket error'''
+    def on_error(_, error):
+        """
+        Print websocket error
+        """
         print 'Error: %s' % error
 
     @staticmethod
     def make_token():
-        '''Generate request token
-        '''
+        """
+        Generate request token
+        """
         seed = ''.join(random.choice(string.ascii_uppercase + string.digits)
                        for _ in range(20))
         token = SHA256.new(seed).hexdigest()[0:38]
         return token
 
-    def on_message(self, ws, message):
-        '''Print message received from websocket
-        '''
+    def on_message(self, _, message):
+        """
+        Print message received from websocket
+        """
         data = json.loads(message)
         if data['token'] == self.events_token:
             if 'result' in data:
@@ -160,8 +167,9 @@ class TelemetryWs(object):
                 self.process_devices(switch_updates[len(switch_updates) - 1])
 
     def get_events(self):
-        '''Subscribes to Telemetry events
-        '''
+        """
+        Subscribes to Telemetry events
+        """
         print 'Subscribing to Telemetry events'
         self.events_token = self.make_token()
         args = {'query': {'analytics': {'/events/v1/allEvents': True}}}
@@ -171,10 +179,11 @@ class TelemetryWs(object):
         subscribe.start()
 
     def get_and_subscribe_devices(self):
-        '''Subscribes to the list of devices that are streaming data to CVP.
-        We'll use this list of devices keyed by the serial number, to add more
-        info to the snmptrap.
-        '''
+        """
+        Subscribes to the list of devices that are streaming data to CVP.
+        We'll use this list of devices keyed by the serial number to add more
+        info to the email.
+        """
         print 'Subscribing to Telemetry devices'
         self.devices_get_token = self.make_token()
         self.devices_sub_token = self.make_token()
@@ -197,14 +206,17 @@ class TelemetryWs(object):
         subscribe.start()
 
     def process_devices(self, devices):
-        '''Iterate through the list of devices and store the mapping of
+        """
+        Iterate through the list of devices and store the mapping of
         serial number to hostname
-        '''
+        """
         for key, value in devices['updates'].items():
             self.devices[key] = value['value']['hostname']
 
     def send_email(self, event):
-        '''Send an email using variables above'''
+        """
+        Send an email using variables above
+        """
         if 'data' not in event['updates']:
             return
 

@@ -326,9 +326,11 @@ def main():
     passwords = dict()
 
     try:
-        passwords['emailPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.userName))
+        passwords['emailPassword'] = getpass.getpass('Enter email server password for {}'.format(cmd_args.userName))
         if not cmd_args.noTelemetrySSL:
-            passwords['telemetryPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.telemetryUrl))
+            passwords['telemetryPassword'] = getpass.getpass('Enter Telemetry password for {}'.format(
+                cmd_args.telemetryUrl)
+            )
     except KeyboardInterrupt:
         exit()
 

@@ -112,9 +112,9 @@ class TelemetryWs(object):
         """
         Methods to run when the ws connects
         """
+        logging.info('Websocket connected.')
         self.get_and_subscribe_devices()
         self.get_events()
-        logging.info('Websocket connected.')
 
     def send_message(self, command, token, args, version='0.9.0'):
         """

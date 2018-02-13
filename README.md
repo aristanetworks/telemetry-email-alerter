@@ -12,7 +12,7 @@ You can download the alerter via `pip` by running `pip install telemetry_email_a
 
 Once installed, you can start up the alerter by running `telemetry_email_alerter <telemetry-server> <smtp-server> <email-send-to-address>`. Additional arguments you might like to use are listed in the [Usage](#usage) section of the documentation.
 
-It's recommended you set up email filters to
+It's recommended you set up email filters to limit notifications. For example, you can set up filters to ignore "INFO" events based on the email subject.
 
 ## Usage
 

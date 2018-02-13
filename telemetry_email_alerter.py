@@ -130,7 +130,7 @@ class TelemetryWs(object):
         self.socket.send(json.dumps(data))
 
     @staticmethod
-    def on_close():
+    def on_close(_):
         """
         Run when ws closes.
         """
@@ -141,6 +141,9 @@ class TelemetryWs(object):
         """
         Print websocket error
         """
+        if type(error) is KeyboardInterrupt:
+            return
+
         logging.error('Websocket connection error: {}'.format(error))
 
     @staticmethod
@@ -321,18 +324,27 @@ def main():
 
     cmd_args = parser.parse_args()
     passwords = dict()
-    passwords['emailPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.userName))
-    if not cmd_args.noAerisSSL:
-        passwords['aerisPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.aerisUrl))
+
+    try:
+        passwords['emailPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.userName))
+        if not cmd_args.noAerisSSL:
+            passwords['aerisPassword'] = getpass.getpass('Enter password for {}'.format(cmd_args.aerisUrl))
+    except KeyboardInterrupt:
+        exit()
 
     logging_level = logging.DEBUG if cmd_args.verbose else logging.WARNING
     logging.basicConfig(level=logging_level)
 
     connection = TelemetryWs(cmd_args, passwords)
-    connection.socket.run_forever(sslopt={
-        'check_hostname': False,
-        'cert_reqs': ssl.CERT_NONE
-    })
+
+    try:
+        connection.socket.run_forever(sslopt={
+            'check_hostname': False,
+            'cert_reqs': ssl.CERT_NONE
+        })
+    except KeyboardInterrupt:
+        connection.socket.close()
+        exit()
 
 
 if __name__ == '__main__':

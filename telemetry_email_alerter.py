@@ -267,16 +267,20 @@ class TelemetryWs(object):
 
         message = MIMEText(body, 'plain', 'utf-8')
 
-        message['From'] = self.config.smtpUsername
-        message['To'] = self.config.sendToAddress
+        email_sender = self.config.sendToAddress[0]
+        if self.config.smtpUsername and '@' in self.config.smtpUsername:
+            email_sender = self.config.smtpUsername
+
+        message['From'] = email_sender
+        message['To'] = ','.join(self.config.sendToAddress)
         if self.config.sendCcAddress:
-            message['Cc'] = self.config.sendCcAddress
+            message['Cc'] = ','.join(self.config.sendCcAddress)
         message['Subject'] = '{} {}: {} on {}'.format(self.config.subjectPrefix, severity, title, host)
         message['Date'] = formatdate(localtime=True)
 
         smtp_server.sendmail(
+            email_sender,
             self.config.sendToAddress,
-            self.config.sendToAddress.split(','),
             message.as_string(),
         )
         logging.info('Email sent for event: {} {}'.format(severity, title))
@@ -302,12 +306,14 @@ def main():
     )
     parser.add_argument(
         'sendToAddress',
-        help='Comma-separated list of email recipients',
+        nargs='+',
+        help='List of email recipients',
     )
     parser.add_argument(
-        '-c',
+        '-cc',
         '--sendCcAddress',
-        help='Comma-separated list of email recipients',
+        nargs='+',
+        help='List of CC email recipients',
     )
     parser.add_argument(
         '-s',

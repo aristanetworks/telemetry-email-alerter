@@ -271,7 +271,7 @@ class TelemetryWs(object):
         message['To'] = self.config.sendToAddress
         if self.config.sendCcAddress:
             message['Cc'] = self.config.sendCcAddress
-        message['Subject'] = '{} {} {}'.format(self.config.subjectPrefix, severity, title)
+        message['Subject'] = '{} {}: {} on {}'.format(self.config.subjectPrefix, severity, title, host)
         message['Date'] = formatdate(localtime=True)
 
         smtp_server.sendmail(

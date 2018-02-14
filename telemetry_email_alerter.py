@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 
 import argparse
-from Crypto.Hash import SHA256
-from email.mime.text import MIMEText
 import getpass
 import json
 import logging
 import random
-import requests
-import string
 import smtplib
 import ssl
-import websocket
+import string
 import threading
 import time
+from email.mime.text import MIMEText
+from email.utils import formatdate
+
+import requests
+import websocket
+from Crypto.Hash import SHA256
 
 API_VERSION_1 = '1.0.0'
 AUTH_PATH = 'cvpservice/login/authenticate.do'
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z'
 GET = 'get'
 SUBSCRIBE = 'subscribe'
 
@@ -72,24 +75,33 @@ class TelemetryWs(object):
                 logging.error('Telemetry credentials invalid. Could not log in.')
                 exit()
 
-        if cmd_args.noSmtpSsl:
-            self.server = smtplib.SMTP(cmd_args.smtpServer, cmd_args.port)
-        else:
-            self.server = smtplib.SMTP_SSL(cmd_args.smtpServer, cmd_args.port)
-
-        if cmd_args.smtpUsername:
-            try:
-                self.server.login(cmd_args.userName, passwords['smtpUsername'])
-            except Exception as e:
-                print e
-                exit()
-
         self.config = cmd_args
+        self.passwords = passwords
         self.devices = {}
         self.devices_get_token = None
         self.devices_sub_token = None
         self.events_token = None
         self.socket.on_open = self.on_run
+
+        # Ensure SMTP connection works.
+        smtp_server = self.connect_to_smtp_server()
+        smtp_server.quit()
+
+    def connect_to_smtp_server(self):
+        smtp_class = smtplib.SMTP if self.config.noSmtpSsl else smtplib.SMTP_SSL
+        server = smtp_class(self.config.smtpServer, self.config.port)
+
+        debug_level = 1 if self.config.verbose else 0
+        server.set_debuglevel(debug_level)
+
+        if self.config.smtpUsername:
+            try:
+                server.login(self.config.smtpUsername, self.passwords['smtpPassword'])
+            except Exception as e:
+                logging.exception(e)
+                exit()
+
+        return server
 
     def on_run(self, _):
         """
@@ -160,8 +172,10 @@ class TelemetryWs(object):
                     for key, update in notification['updates'].items():
                         event_updates.append(update['value'])
 
-            for event in event_updates:
-                self.send_email(event)
+            if len(event_updates) != 0:
+                smtp_server = self.connect_to_smtp_server()
+                for event in event_updates:
+                    self.send_email(event, smtp_server)
         elif (
                 data['token'] == self.devices_get_token
                 or data['token'] == self.devices_sub_token
@@ -228,7 +242,7 @@ class TelemetryWs(object):
 
         logging.info('Received devices. Total device count is {}.'.format(len(self.devices)))
 
-    def send_email(self, event):
+    def send_email(self, event, smtp_server):
         """
         Send an email using variables above
         """
@@ -238,25 +252,29 @@ class TelemetryWs(object):
 
         # Try to lookup the hostname, if not found return the serialnum
         host = self.devices.get(data.get('deviceId'), data.get('deviceId'))
+        key = event['key']
         severity = event['severity']
         title = event['title']
         desc = event['description']
         timestamp = event['timestamp'] / 1000  # ms to sec
-        datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
+        formated_timestamp = time.strftime(DATE_FORMAT, time.localtime(timestamp))
 
-        body = '''{} event on {} at {}\n \
-        Description: {}\n \
-        View Event at {}/telemetry/events\n'''.format(severity, host, datetime, desc, self.config.telemetryUrl)
+        body = '\n'.join([
+            '{} event on {} at {}'.format(severity, host, formated_timestamp),
+            'Description: {}'.format(desc),
+            'View Event at {}/telemetry/events/{}'.format(self.config.telemetryUrl, key),
+        ])
 
-        message = MIMEText(body)
+        message = MIMEText(body, 'plain', 'utf-8')
 
         message['From'] = self.config.smtpUsername
         message['To'] = self.config.sendToAddress
         if self.config.sendCcAddress:
             message['Cc'] = self.config.sendCcAddress
         message['Subject'] = '{} {} {}'.format(self.config.subjectPrefix, severity, title)
+        message['Date'] = formatdate(localtime=True)
 
-        self.server.sendmail(
+        smtp_server.sendmail(
             self.config.sendToAddress,
             self.config.sendToAddress.split(','),
             message.as_string(),

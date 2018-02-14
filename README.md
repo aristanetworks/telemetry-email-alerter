@@ -35,8 +35,14 @@ You can run the script with the following args:
 | `--noSslValidation` | no | off (validation is used) | Disables validation of SSL certificates. For debugging purposes. Not advised to use in real environments |
 | `--verbose` | no | off | Show logging messages |
 
+## Using an SMTP server
+
+It's recommended you use an SMTP server you run and maintain yourself. Your company might have one you can use.
+
+Alternatively you can use [the Gmail SMTP server](https://support.google.com/a/answer/176600). You can use your Gmail username and [an app password](https://support.google.com/accounts/answer/185833). Be aware of its send limits though—it's certainly possible you might exceed them.
+
 ## Development info
 
 You will need Python 2.7 with [`pip` and `virtualenv`](https://packaging.python.org/tutorials/installing-packages/). Create a `virtualenv` to house the dependencies of this project. Once that's done, you can install dependencies by running `pip install -r requirements.pip` from the project root.
 
-You can test email notifications by using `smtp.gmail.com` with your Gmail username and [an app password](https://support.google.com/accounts/answer/185833) for authentication. Alternatively you can use [`mailslurper`](https://github.com/mailslurper/mailslurper) on your machine locally.
+You can test email notifications by using the Gmail SMTP server mentioned in [Using an SMTP server](#using-an-smtp-server). Alternatively you can use an app like [`mailslurper`](https://github.com/mailslurper/mailslurper) on your machine locally.

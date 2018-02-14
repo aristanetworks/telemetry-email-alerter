@@ -152,7 +152,15 @@ class TelemetryWs(object):
             return
 
         if data['token'] == self.events_token:
-            for event in data['result'][0]['Notifications']:
+            event_updates = []
+            for result in data['result']:
+                for notification in result['Notifications']:
+                    if 'updates' not in notification:
+                        continue
+                    for key, update in notification['updates'].items():
+                        event_updates.append(update['value'])
+
+            for event in event_updates:
                 self.send_email(event)
         elif (
                 data['token'] == self.devices_get_token
@@ -172,9 +180,9 @@ class TelemetryWs(object):
         """
         Subscribes to Telemetry events
         """
-        logging.info('Subscribing to Telemetry events')
+        logging.info('Subscribing to Telemetry events.')
         self.events_token = self.make_token()
-        args = {'query': {'analytics': {'/events/v1/allEvents': True}}}
+        args = {'query': {'analytics': {'/events/activeEvents': True}}}
         subscribe = threading.Thread(
             target=self.send_message,
             args=(SUBSCRIBE, self.events_token, args)
@@ -224,21 +232,16 @@ class TelemetryWs(object):
         """
         Send an email using variables above
         """
-        if 'data' not in event['updates']:
-            return
-
         logging.debug('Preparing email notification.')
 
-        # Gather data for message
-        update = event['updates']
-        data = update['data']['value']
+        data = event['data']
 
         # Try to lookup the hostname, if not found return the serialnum
         host = self.devices.get(data.get('deviceId'), data.get('deviceId'))
-        severity = update['severity']['value']
-        title = update['title']['value']
-        desc = update['description']['value']
-        timestamp = update['timestamp']['value'] / 1000  # ms to sec
+        severity = event['severity']
+        title = event['title']
+        desc = event['description']
+        timestamp = event['timestamp'] / 1000  # ms to sec
         datetime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))
 
         body = '''{} event on {} at {}\n \
@@ -247,15 +250,17 @@ class TelemetryWs(object):
 
         message = MIMEText(body)
 
-        message['From'] = self.config.userName
+        message['From'] = self.config.smtpUsername
         message['To'] = self.config.sendToAddress
         if self.config.sendCcAddress:
             message['Cc'] = self.config.sendCcAddress
         message['Subject'] = '{} {} {}'.format(self.config.subjectPrefix, severity, title)
 
-        self.server.sendmail(self.config.userName,
-                             self.config.sendToAddress.split(','),
-                             message.as_string())
+        self.server.sendmail(
+            self.config.sendToAddress,
+            self.config.sendToAddress.split(','),
+            message.as_string(),
+        )
         logging.info('Email sent for event: {} {}'.format(severity, title))
 
 

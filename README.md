@@ -4,19 +4,23 @@ Python script that allows you to subscribe to Arista Telemetry events and then s
 
 Emails are sent for events that occur while the alerter is running—you won't get alerts for past events.
 
+We recommend you set up email filters to limit notifications. For example, you can set up filters to ignore "INFO" events based on the email subject.
+
 ## Installation
 
 Python 2.7 and [`pip`](https://packaging.python.org/tutorials/installing-packages) are required.
 
 You can download the alerter via `pip` by running `pip install telemetry_email_alerter`.
 
-Once installed, you can start up the alerter by running `telemetry_email_alerter <telemetry-server> <smtp-server> <email-send-to-address-1> <email-send-to-address-2> ... <email-send-to-address-n>`. Additional arguments you might like to use are listed in the [Usage](#usage) section of the documentation.
-
-It's recommended you set up email filters to limit notifications. For example, you can set up filters to ignore "INFO" events based on the email subject.
-
 ## Usage
 
-You can run the script with the following args:
+You can start up the alerter by running:
+
+```
+telemetry_email_alerter <telemetry-server> <smtp-server> <email-1> <email-2> ... <email-n>
+```
+
+The full list of arguments accepted by the script are listed below.
 
 | Name | Required? | Default | Description |
 |---|---|---|---|
@@ -37,7 +41,7 @@ You can run the script with the following args:
 
 ## Using an SMTP server
 
-It's recommended you use an SMTP server you run and maintain yourself. Your company might have one you can use.
+We recommend you use an SMTP server you run and maintain yourself. Your company might have one you can use.
 
 Alternatively you can use [the Gmail SMTP server](https://support.google.com/a/answer/176600). You can use your Gmail username and [an app password](https://support.google.com/accounts/answer/185833). Be aware of its send limits though—it's certainly possible you might exceed them.
 

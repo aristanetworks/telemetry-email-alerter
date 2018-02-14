@@ -10,7 +10,7 @@ Python 2.7 and [`pip`](https://packaging.python.org/tutorials/installing-package
 
 You can download the alerter via `pip` by running `pip install telemetry_email_alerter`.
 
-Once installed, you can start up the alerter by running `telemetry_email_alerter <telemetry-server> <smtp-server> <email-send-to-address>`. Additional arguments you might like to use are listed in the [Usage](#usage) section of the documentation.
+Once installed, you can start up the alerter by running `telemetry_email_alerter <telemetry-server> <smtp-server> <email-send-to-address-1> <email-send-to-address-2> ... <email-send-to-address-n>`. Additional arguments you might like to use are listed in the [Usage](#usage) section of the documentation.
 
 It's recommended you set up email filters to limit notifications. For example, you can set up filters to ignore "INFO" events based on the email subject.
 
@@ -22,8 +22,8 @@ You can run the script with the following args:
 |---|---|---|---|
 | `telemetryUrl` | yes | — | The IP address or hostname of your CVP Telemetry instance |
 | `smtpServer` | yes | — | The IP address or hostname of your SMTP (email) server |
-| `sendToAddress` | yes | — | The email to send notifications to |
-| `--sendCcAddresses a@example.com,b@example.com` | no | — | Emails to CC notifications for, comma-separated |
+| `sendToAddress` | yes | — | The emails to send notifications to. You can specify multiple emails |
+| `--sendCcAddresses a@example.com b@example.com` | no | — | Emails to CC notifications for. You can specify multiple emails |
 | `--port 1234` | no | 465 | The port your SMTP server listens to if it use a non-standard port |
 | `--subjectPrefix 'CVP Alert'` | no | \[CloudVision Telemetry\] | A message to prepend to email subjects |
 | `--noSmtpSsl` | no | off (SSL is used) | Disable SSL for SMTP connections |

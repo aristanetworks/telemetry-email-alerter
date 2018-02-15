@@ -251,7 +251,12 @@ class TelemetryWs(object):
         data = event['data']
 
         # Try to lookup the hostname, if not found return the serialnum
-        host = self.devices.get(data.get('deviceId'), data.get('deviceId'))
+        device_id = data.get('deviceId')
+        device_name = self.devices.get(device_id, device_id)
+
+        # If there is no device name/ID, the event likely occurred due to a CVP process.
+        event_location = device_name if device_name else 'backend analytics process'
+
         key = event['key']
         severity = event['severity']
         title = event['title']
@@ -260,7 +265,7 @@ class TelemetryWs(object):
         formated_timestamp = time.strftime(DATE_FORMAT, time.localtime(timestamp))
 
         body = '\n'.join([
-            '{} event on {} at {}'.format(severity, host, formated_timestamp),
+            '{} event on {} at {}'.format(severity, event_location, formated_timestamp),
             'Description: {}'.format(desc),
             'View Event at {}/telemetry/events/{}'.format(self.config.telemetryUrl, key),
         ])
@@ -275,7 +280,7 @@ class TelemetryWs(object):
         message['To'] = ','.join(self.config.sendToAddress)
         if self.config.sendCcAddress:
             message['Cc'] = ','.join(self.config.sendCcAddress)
-        message['Subject'] = '{} {}: {} on {}'.format(self.config.subjectPrefix, severity, title, host)
+        message['Subject'] = '{} {}: {} on {}'.format(self.config.subjectPrefix, severity, title, event_location)
         message['Date'] = formatdate(localtime=True)
 
         smtp_server.sendmail(

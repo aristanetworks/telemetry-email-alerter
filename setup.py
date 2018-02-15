@@ -6,12 +6,12 @@ with open('./requirements.pip') as dependencies_file:
 
 setup(
     name='telemetry_email_alerter',
-    version='1.0.1',
+    version='1.0.2',
     description='Script for subscribing to Arista Telemetry Events and sending email alerts.',
     author='Seb Bacanu',
     author_email='sebastian@arista.com',
     url='https://github.com/aristanetworks/telemetry-email-alerter',
-    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.1.tar.gz',
+    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.2.tar.gz',
     keywords='alerts arista cvp email notifications smtp telemetry',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -22,7 +22,7 @@ setup(
     install_requires=dependencies,
     entry_points={
         'console_scripts': [
-            'telemetry_email_alerter = telemetry_email_alerter:main',
+            'telemetry-email-alerter = telemetry_email_alerter.__main__:main',
         ]
     }
 )

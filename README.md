@@ -10,14 +10,14 @@ We recommend you set up email filters to limit notifications. For example, you c
 
 Python 2.7 and [`pip`](https://packaging.python.org/tutorials/installing-packages) are required.
 
-You can download the alerter via `pip` by running `pip install telemetry_email_alerter`.
+You can download the alerter via `pip` by running `pip install telemetry-email-alerter`.
 
 ## Usage
 
 You can start up the alerter by running:
 
 ```
-telemetry_email_alerter <telemetry-server> <smtp-server> <email-1> <email-2> ... <email-n>
+telemetry-email-alerter <telemetry-server> <smtp-server> <email-1> <email-2> ... <email-n>
 ```
 
 The full list of arguments accepted by the script are listed below.
@@ -50,3 +50,9 @@ Alternatively you can use [the Gmail SMTP server](https://support.google.com/a/a
 You will need Python 2.7 with [`pip` and `virtualenv`](https://packaging.python.org/tutorials/installing-packages/). Create a `virtualenv` to house the dependencies of this project. Once that's done, you can install dependencies by running `pip install -r requirements.pip` from the project root.
 
 You can test email notifications by using the Gmail SMTP server mentioned in [Using an SMTP server](#using-an-smtp-server). Alternatively you can use an app like [`mailslurper`](https://github.com/mailslurper/mailslurper) on your machine locally.
+
+To run the script locally, you can run the `telemetry_email_alerter` package from the project root:
+
+```
+python telemetry_email_alerter [...args]
+```

@@ -254,7 +254,7 @@ class TelemetryWs(object):
         device_id = data.get('deviceId')
         device_name = self.devices.get(device_id, device_id)
 
-        event_location = 'on {}'.format(device_name) if device_name else ''
+        event_location = ' on {}'.format(device_name) if device_name else ''
 
         key = event['key']
         severity = event['severity']
@@ -264,7 +264,7 @@ class TelemetryWs(object):
         formated_timestamp = time.strftime(DATE_FORMAT, time.localtime(timestamp))
 
         body = '\n'.join([
-            '{} event {} at {}'.format(severity, event_location, formated_timestamp),
+            '{} event{} at {}'.format(severity, event_location, formated_timestamp),
             'Description: {}'.format(desc),
             'View Event at {}/telemetry/events/{}'.format(self.config.telemetryUrl, key),
         ])
@@ -279,7 +279,7 @@ class TelemetryWs(object):
         message['To'] = ','.join(self.config.sendToAddress)
         if self.config.sendCcAddress:
             message['Cc'] = ','.join(self.config.sendCcAddress)
-        message['Subject'] = '{} {}: {} {}'.format(self.config.subjectPrefix, severity, title, event_location)
+        message['Subject'] = '{} {}: {}{}'.format(self.config.subjectPrefix, severity, title, event_location)
         message['Date'] = formatdate(localtime=True)
 
         smtp_server.sendmail(

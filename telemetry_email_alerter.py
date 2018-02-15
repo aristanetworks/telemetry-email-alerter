@@ -250,11 +250,9 @@ class TelemetryWs(object):
 
         data = event['data']
 
+        # Try to lookup the hostname, if not found return the serialnum
         device_id = data.get('deviceId')
-        device_name = ''
-        if device_id:
-            # Try to lookup the hostname, if not found return the serialnum
-            device_name = self.devices.get(data.get('deviceId'), data.get('deviceId'))
+        device_name = self.devices.get(device_id, device_id)
 
         event_location = 'on {}'.format(device_name) if device_name else ''
 

@@ -11,7 +11,7 @@ setup(
     author='Seb Bacanu',
     author_email='sebastian@arista.com',
     url='https://github.com/aristanetworks/telemetry-email-alerter',
-    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.0.tar.gz',
+    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.1.tar.gz',
     keywords='alerts arista cvp email notifications smtp telemetry',
     classifiers=[
         'Development Status :: 3 - Alpha',

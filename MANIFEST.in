@@ -1,1 +1,3 @@
-include README.md LICENSE requirements.pip
+include README.rst
+include LICENSE
+include requirements.pip

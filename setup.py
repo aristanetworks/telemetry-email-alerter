@@ -1,17 +1,23 @@
+import codecs
+
 from setuptools import setup
 
 with open('./requirements.pip') as dependencies_file:
     dependencies = dependencies_file.read().split('\n')
     dependencies = filter(lambda dep: len(dep) > 0, dependencies)
 
+with codecs.open('./README.rst', encoding='utf8') as readme_file:
+    readme = readme_file.read()
+
 setup(
     name='telemetry_email_alerter',
-    version='1.0.5',
+    version='1.0.6',
     description='Script for subscribing to Arista Telemetry Events and sending email alerts.',
+    long_description=readme,
     author='Arista Telemetry Team',
     author_email='telemetry-dev@arista.com',
     url='https://github.com/aristanetworks/telemetry-email-alerter',
-    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.5.tar.gz',
+    download_url='https://github.com/aristanetworks/telemetry-email-alerter/archive/v1.0.6.tar.gz',
     keywords='alerts arista cvp email notifications smtp telemetry',
     classifiers=[
         'Development Status :: 3 - Alpha',

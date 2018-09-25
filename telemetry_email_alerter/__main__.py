@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import argparse
 import getpass
 import logging
 import ssl
 
-from telemetry_email_alerter import TelemetryWs
+from telemetry_ws import TelemetryWs
 
 
 def get_password(prompt):
